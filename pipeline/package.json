@@ -1,0 +1,16 @@
+{
+  "name": "countdown-gif-pipeline",
+  "version": "1.0.0",
+  "description": "Renderiza los timers de programmed-timers/*.json a GIF usando el mismo countdown.html, y los mantiene al día cada N segundos.",
+  "type": "commonjs",
+  "scripts": {
+    "render": "node render.js",
+    "once": "node pipeline.js --once",
+    "watch": "node pipeline.js"
+  },
+  "dependencies": {
+    "gifenc": "^1.0.3",
+    "pngjs": "^7.0.0",
+    "puppeteer-core": "^24.0.0"
+  }
+}

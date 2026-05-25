@@ -1,0 +1,20 @@
+{
+  "name": "cyber-2026",
+  "target": "2026-06-01T00:00:00-04:00",
+  "expired_text": "¡EL CYBER YA COMENZÓ!",
+  "colors": {
+    "bg": "#0a0a0a",
+    "box_fill": "#1a0a2e",
+    "box_border": "#7b2fff",
+    "color_number": "#ffffff",
+    "color_label": "#7b2fff",
+    "color_separator": "#7b2fff",
+    "color_accent": "#00f0ff"
+  },
+  "gif": {
+    "width": 700,
+    "height": 220,
+    "scale": 1,
+    "durationSeconds": 600
+  }
+}

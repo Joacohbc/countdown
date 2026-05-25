@@ -84,6 +84,10 @@
     <div class="section">
       <div class="section-title">Evento</div>
       <div class="field">
+        <label>Nombre del timer (archivo .json)</label>
+        <input type="text" id="name" value="cyber-2026" placeholder="cyber-2026">
+      </div>
+      <div class="field">
         <label>Fecha y hora objetivo</label>
         <input type="datetime-local" id="target" step="1" value="2026-06-01T00:00:00">
       </div>
@@ -108,6 +112,21 @@
       <div class="color-row"><label>Acento</label><input type="color" id="color_accent" value="#00f0ff"><code id="color_accent-hex">#00f0ff</code></div>
     </div>
 
+    <div class="section">
+      <div class="section-title">GIF (pipeline)</div>
+      <div class="field">
+        <label>Duración del conteo (segundos)</label>
+        <input type="text" id="gif_duration" value="600">
+        <div style="font-size:11px;color:#666;margin-top:4px;">
+          El GIF cuenta hacia abajo segundo a segundo y se congela. 600 = 10 min.
+          Si falta menos que esto, llega a 00 y muestra el texto de expirado.
+        </div>
+      </div>
+      <div class="field"><label>Ancho (px)</label><input type="text" id="gif_width" value="700"></div>
+      <div class="field"><label>Alto (px)</label><input type="text" id="gif_height" value="220"></div>
+      <div class="field"><label>Escala (1=normal, 2=nítido)</label><input type="text" id="gif_scale" value="1"></div>
+    </div>
+
     <div class="actions">
       <button class="btn btn-outline" onclick="resetDefaults()">Reset</button>
     </div>
@@ -129,6 +148,16 @@
       <div class="url-row">
         <input type="text" id="html-snippet" readonly>
         <button onclick="copy('html-snippet')">Copiar</button>
+      </div>
+    </div>
+
+    <div class="url-box">
+      <label>JSON del timer (guardar en programmed-timers/)</label>
+      <textarea id="json-out" readonly rows="16"
+        style="width:100%;background:#0e0e0e;border:1px solid #333;border-radius:6px;color:#00f0ff;font-family:monospace;font-size:12px;padding:10px 12px;outline:none;resize:vertical;"></textarea>
+      <div class="actions" style="margin-top:10px;">
+        <button class="btn" onclick="downloadJson()">Descargar .json</button>
+        <button class="btn btn-outline" onclick="copy('json-out')">Copiar JSON</button>
       </div>
     </div>
   </div>
@@ -158,9 +187,48 @@ COLOR_IDS.forEach(id => {
     update();
   });
 });
-['target','tz','expired_text'].forEach(id => {
+['name','target','tz','expired_text','gif_width','gif_height','gif_duration','gif_scale'].forEach(id => {
   $(id).addEventListener('input', update);
 });
+
+// Mapea los inputs de color del editor a las claves que entiende countdown.html / el JSON
+const COLOR_KEY_MAP = {
+  bg: 'bg', box_fill: 'box_fill', box_border: 'box_border',
+  color_number: 'color_number', color_label: 'color_label',
+  color_separator: 'color_separator', color_accent: 'color_accent',
+};
+
+function buildConfig() {
+  const colors = {};
+  COLOR_IDS.forEach(id => { colors[COLOR_KEY_MAP[id]] = $(id).value; });
+  const int = (id, def) => {
+    const n = parseInt($(id).value, 10);
+    return Number.isFinite(n) ? n : def;
+  };
+  return {
+    name: ($('name').value || 'timer').trim().replace(/[^a-zA-Z0-9_-]+/g, '-'),
+    target: $('target').value + ($('tz').value || '-04:00'),
+    expired_text: $('expired_text').value,
+    colors,
+    gif: {
+      width: int('gif_width', 700),
+      height: int('gif_height', 220),
+      scale: int('gif_scale', 1),
+      durationSeconds: int('gif_duration', 600),
+    },
+  };
+}
+
+function downloadJson() {
+  const cfg = buildConfig();
+  const blob = new Blob([JSON.stringify(cfg, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = cfg.name + '.json';
+  a.click();
+  URL.revokeObjectURL(a.href);
+  showToast('JSON descargado: ' + cfg.name + '.json');
+}
 
 function buildParams() {
   const p = new URLSearchParams();
@@ -179,6 +247,7 @@ function update() {
   const url = buildUrl();
   $('final-url').value = url;
   $('html-snippet').value = '<a href="' + url + '">Ver countdown</a>';
+  $('json-out').value = JSON.stringify(buildConfig(), null, 2);
 
   // Debounce el reload del iframe para no recargar en cada tecla/color
   clearTimeout(previewTimer);
@@ -188,9 +257,14 @@ function update() {
 }
 
 function resetDefaults() {
+  $('name').value = 'cyber-2026';
   $('target').value = DEFAULTS.target;
   $('tz').value = DEFAULTS.tz;
   $('expired_text').value = DEFAULTS.expired_text;
+  $('gif_width').value = '700';
+  $('gif_height').value = '220';
+  $('gif_duration').value = '600';
+  $('gif_scale').value = '1';
   COLOR_IDS.forEach(id => {
     $(id).value = DEFAULTS.colors[id];
     $(id + '-hex').textContent = DEFAULTS.colors[id];

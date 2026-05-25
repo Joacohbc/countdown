@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<!--
+  Cyber Countdown — Frontend estático (sin backend)
+  Uso: countdown.html?target=2026-06-01T00:00:00-04:00
+  Params opcionales: expired_text, bg, box_fill, box_border,
+                     color_number, color_label, color_separator, color_accent
+-->
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Cyber Countdown</title>
+<style>
+  :root {
+    --bg: #0a0a0a;
+    --box-fill: #1a0a2e;
+    --box-border: #7b2fff;
+    --number: #ffffff;
+    --label: #7b2fff;
+    --separator: #7b2fff;
+    --accent: #00f0ff;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; }
+  body {
+    background: var(--bg);
+    font-family: 'Segoe UI', system-ui, Arial, sans-serif;
+    display: flex; align-items: center; justify-content: center;
+    min-height: 100vh; padding: 20px; overflow: hidden;
+  }
+  .countdown { display: flex; align-items: center; gap: 14px; }
+  .unit { width: 90px; height: 90px; perspective: 600px; }
+  .box {
+    width: 100%; height: 100%;
+    background: var(--box-fill);
+    border: 2px solid var(--box-border);
+    border-radius: 12px;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    box-shadow: 0 0 24px -10px var(--box-border);
+  }
+  .num {
+    font-size: 40px; font-weight: 800; color: var(--number);
+    line-height: 1; font-variant-numeric: tabular-nums;
+  }
+  .num.flip { animation: flip 0.5s ease; }
+  @keyframes flip {
+    0%   { transform: rotateX(0deg);   opacity: 1; }
+    50%  { transform: rotateX(-90deg); opacity: 0.25; }
+    100% { transform: rotateX(0deg);   opacity: 1; }
+  }
+  .lbl {
+    margin-top: 6px; font-size: 11px; font-weight: 700;
+    letter-spacing: 1px; color: var(--label);
+  }
+  .sep {
+    font-size: 34px; font-weight: 800; color: var(--separator);
+    animation: pulse 1s ease-in-out infinite;
+  }
+  @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.25; } }
+  .expired {
+    font-size: 32px; font-weight: 800; color: var(--accent);
+    text-align: center; animation: glow 1.2s ease-in-out infinite;
+  }
+  @keyframes glow {
+    0%,100% { text-shadow: 0 0 8px var(--accent); }
+    50%     { text-shadow: 0 0 26px var(--accent); }
+  }
+  @media (max-width: 520px) {
+    .countdown { gap: 8px; }
+    .unit { width: 64px; height: 64px; }
+    .num { font-size: 28px; }
+    .sep { font-size: 24px; }
+  }
+</style>
+</head>
+<body>
+  <div id="root" class="countdown"></div>
+<script>
+  const q = new URLSearchParams(location.search);
+
+  const TARGET = q.get('target') || '2026-06-01T00:00:00-04:00';
+  const EXPIRED_TEXT = q.get('expired_text') || '¡EL CYBER YA COMENZÓ!';
+
+  // Colores por query param -> sobreescriben las CSS variables
+  const COLOR_PARAMS = {
+    bg: '--bg',
+    box_fill: '--box-fill',
+    box_border: '--box-border',
+    color_number: '--number',
+    color_label: '--label',
+    color_separator: '--separator',
+    color_accent: '--accent',
+  };
+  Object.entries(COLOR_PARAMS).forEach(([param, cssVar]) => {
+    const v = q.get(param);
+    if (v) document.documentElement.style.setProperty(cssVar, v);
+  });
+
+  const root = document.getElementById('root');
+  const UNITS = [
+    { key: 'd', label: 'DÍAS' },
+    { key: 'h', label: 'HRS' },
+    { key: 'm', label: 'MIN' },
+    { key: 's', label: 'SEG' },
+  ];
+
+  function build() {
+    root.innerHTML = '';
+    UNITS.forEach((u, i) => {
+      const unit = document.createElement('div');
+      unit.className = 'unit';
+      unit.innerHTML =
+        '<div class="box"><div class="num" id="num-' + u.key + '">00</div>' +
+        '<div class="lbl">' + u.label + '</div></div>';
+      root.appendChild(unit);
+      if (i < UNITS.length - 1) {
+        const sep = document.createElement('div');
+        sep.className = 'sep';
+        sep.textContent = ':';
+        root.appendChild(sep);
+      }
+    });
+  }
+
+  function getRemaining() {
+    const diff = new Date(TARGET).getTime() - Date.now();
+    if (isNaN(diff) || diff <= 0) return null;
+    return {
+      d: Math.floor(diff / 86400000),
+      h: Math.floor((diff % 86400000) / 3600000),
+      m: Math.floor((diff % 3600000) / 60000),
+      s: Math.floor((diff % 60000) / 1000),
+    };
+  }
+
+  const pad = n => String(n).padStart(2, '0');
+
+  let built = false;
+  function tick() {
+    const t = getRemaining();
+    if (!t) {
+      root.innerHTML = '<div class="expired"></div>';
+      root.firstChild.textContent = EXPIRED_TEXT;
+      built = false;
+      return;
+    }
+    if (!built) { build(); built = true; }
+    UNITS.forEach(u => {
+      const el = document.getElementById('num-' + u.key);
+      const val = pad(t[u.key]);
+      if (el && el.textContent !== val) {
+        el.textContent = val;
+        el.classList.remove('flip');
+        void el.offsetWidth;
+        el.classList.add('flip');
+      }
+    });
+  }
+
+  tick();
+  setInterval(tick, 1000);
+</script>
+</body>
+</html>

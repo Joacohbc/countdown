@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<!--
+  Cyber Countdown — Editor (frontend estático, sin backend)
+  Customizá lo básico y copiá la URL final que apunta a countdown.html
+-->
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Countdown Editor</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: #0e0e0e; color: #e0e0e0; font-family: 'Segoe UI', system-ui, sans-serif; }
+  .layout { display: grid; grid-template-columns: 340px 1fr; min-height: 100vh; }
+
+  .sidebar { background: #161616; border-right: 1px solid #2a2a2a; padding: 24px; overflow-y: auto; }
+  .sidebar h1 { font-size: 18px; color: #fff; margin-bottom: 20px; }
+
+  .section { margin-bottom: 20px; }
+  .section-title { font-size: 11px; text-transform: uppercase; letter-spacing: 1.5px; color: #666; margin-bottom: 10px; font-weight: 600; }
+
+  .field { margin-bottom: 14px; }
+  .field label { display: block; font-size: 12px; color: #999; margin-bottom: 4px; }
+  .field input[type="text"],
+  .field input[type="datetime-local"] {
+    width: 100%; padding: 8px 10px; background: #0e0e0e; border: 1px solid #333;
+    border-radius: 6px; color: #fff; font-size: 13px; outline: none;
+  }
+  .field input:focus { border-color: #7b2fff; }
+
+  .color-row { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+  .color-row label { font-size: 12px; color: #999; min-width: 90px; }
+  .color-row input[type="color"] {
+    width: 32px; height: 32px; border: 1px solid #333; border-radius: 6px;
+    cursor: pointer; background: none; padding: 2px;
+  }
+  .color-row code { font-size: 11px; color: #666; }
+
+  .actions { display: flex; gap: 8px; margin-top: 16px; }
+
+  .main { display: flex; flex-direction: column; align-items: center; justify-content: flex-start; padding: 40px; gap: 24px; }
+
+  #preview {
+    width: 100%; max-width: 700px; height: 220px; border: 1px solid #222;
+    border-radius: 8px; background: #000;
+  }
+
+  .url-box {
+    background: #161616; border: 1px solid #2a2a2a; border-radius: 8px;
+    padding: 16px; width: 100%; max-width: 700px;
+  }
+  .url-box label { font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: #666; margin-bottom: 6px; display: block; }
+  .url-row { display: flex; gap: 8px; }
+  .url-row input {
+    flex: 1; padding: 10px 12px; background: #0e0e0e; border: 1px solid #333;
+    border-radius: 6px; color: #00f0ff; font-family: monospace; font-size: 12px; outline: none;
+  }
+  .url-row button, .btn {
+    padding: 8px 16px; background: #7b2fff; color: #fff; border: none;
+    border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 600; white-space: nowrap;
+  }
+  .url-row button:hover, .btn:hover { background: #6a1fef; }
+  .btn-outline { background: transparent; border: 1px solid #333; color: #ccc; }
+  .btn-outline:hover { border-color: #7b2fff; color: #fff; background: transparent; }
+
+  .toast {
+    position: fixed; bottom: 20px; right: 20px; background: #7b2fff; color: #fff;
+    padding: 10px 20px; border-radius: 8px; font-size: 13px; opacity: 0;
+    transition: opacity 0.3s; pointer-events: none;
+  }
+  .toast.show { opacity: 1; }
+
+  @media (max-width: 768px) {
+    .layout { grid-template-columns: 1fr; }
+    .sidebar { border-right: none; border-bottom: 1px solid #2a2a2a; }
+  }
+</style>
+</head>
+<body>
+<div class="layout">
+  <div class="sidebar">
+    <h1>🔥 Countdown Editor</h1>
+
+    <div class="section">
+      <div class="section-title">Evento</div>
+      <div class="field">
+        <label>Fecha y hora objetivo</label>
+        <input type="datetime-local" id="target" step="1" value="2026-06-01T00:00:00">
+      </div>
+      <div class="field">
+        <label>Timezone offset (ej: -04:00)</label>
+        <input type="text" id="tz" value="-04:00" placeholder="-04:00">
+      </div>
+      <div class="field">
+        <label>Texto al expirar</label>
+        <input type="text" id="expired_text" value="¡EL CYBER YA COMENZÓ!">
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">Colores</div>
+      <div class="color-row"><label>Fondo</label><input type="color" id="bg" value="#0a0a0a"><code id="bg-hex">#0a0a0a</code></div>
+      <div class="color-row"><label>Caja relleno</label><input type="color" id="box_fill" value="#1a0a2e"><code id="box_fill-hex">#1a0a2e</code></div>
+      <div class="color-row"><label>Caja borde</label><input type="color" id="box_border" value="#7b2fff"><code id="box_border-hex">#7b2fff</code></div>
+      <div class="color-row"><label>Números</label><input type="color" id="color_number" value="#ffffff"><code id="color_number-hex">#ffffff</code></div>
+      <div class="color-row"><label>Etiquetas</label><input type="color" id="color_label" value="#7b2fff"><code id="color_label-hex">#7b2fff</code></div>
+      <div class="color-row"><label>Separador</label><input type="color" id="color_separator" value="#7b2fff"><code id="color_separator-hex">#7b2fff</code></div>
+      <div class="color-row"><label>Acento</label><input type="color" id="color_accent" value="#00f0ff"><code id="color_accent-hex">#00f0ff</code></div>
+    </div>
+
+    <div class="actions">
+      <button class="btn btn-outline" onclick="resetDefaults()">Reset</button>
+    </div>
+  </div>
+
+  <div class="main">
+    <iframe id="preview" title="Preview"></iframe>
+
+    <div class="url-box">
+      <label>URL final (countdown.html)</label>
+      <div class="url-row">
+        <input type="text" id="final-url" readonly>
+        <button onclick="copy('final-url')">Copiar</button>
+      </div>
+    </div>
+
+    <div class="url-box">
+      <label>HTML para email (botón → abre el countdown)</label>
+      <div class="url-row">
+        <input type="text" id="html-snippet" readonly>
+        <button onclick="copy('html-snippet')">Copiar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const $ = id => document.getElementById(id);
+
+const DEFAULTS = {
+  target: '2026-06-01T00:00:00',
+  tz: '-04:00',
+  expired_text: '¡EL CYBER YA COMENZÓ!',
+  colors: {
+    bg: '#0a0a0a', box_fill: '#1a0a2e', box_border: '#7b2fff',
+    color_number: '#ffffff', color_label: '#7b2fff',
+    color_separator: '#7b2fff', color_accent: '#00f0ff',
+  },
+};
+
+const COLOR_IDS = ['bg','box_fill','box_border','color_number','color_label','color_separator','color_accent'];
+
+COLOR_IDS.forEach(id => {
+  $(id).addEventListener('input', () => {
+    $(id + '-hex').textContent = $(id).value;
+    update();
+  });
+});
+['target','tz','expired_text'].forEach(id => {
+  $(id).addEventListener('input', update);
+});
+
+function buildParams() {
+  const p = new URLSearchParams();
+  p.set('target', $('target').value + ($('tz').value || '-04:00'));
+  p.set('expired_text', $('expired_text').value);
+  COLOR_IDS.forEach(id => p.set(id, $(id).value));
+  return p;
+}
+
+function buildUrl() {
+  return new URL('countdown.html?' + buildParams().toString(), location.href).toString();
+}
+
+let previewTimer = null;
+function update() {
+  const url = buildUrl();
+  $('final-url').value = url;
+  $('html-snippet').value = '<a href="' + url + '">Ver countdown</a>';
+
+  // Debounce el reload del iframe para no recargar en cada tecla/color
+  clearTimeout(previewTimer);
+  previewTimer = setTimeout(() => {
+    $('preview').src = 'countdown.html?' + buildParams().toString();
+  }, 250);
+}
+
+function resetDefaults() {
+  $('target').value = DEFAULTS.target;
+  $('tz').value = DEFAULTS.tz;
+  $('expired_text').value = DEFAULTS.expired_text;
+  COLOR_IDS.forEach(id => {
+    $(id).value = DEFAULTS.colors[id];
+    $(id + '-hex').textContent = DEFAULTS.colors[id];
+  });
+  update();
+}
+
+function copy(id) {
+  navigator.clipboard.writeText($(id).value);
+  showToast('Copiado');
+}
+
+function showToast(msg) {
+  const t = $('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2000);
+}
+
+update();
+</script>
+</body>
+</html>

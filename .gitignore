@@ -1,0 +1,18 @@
+# Dependencias
+node_modules/
+
+# Temporales del pipeline (escritura atómica de GIFs)
+*.tmp
+gifs/*.tmp
+
+# Logs
+*.log
+npm-debug.log*
+
+# SO / editores
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# OJO: los GIFs en gifs/*.gif SÍ se versionan (es el output persistido del pipeline)
